@@ -24,8 +24,9 @@ original author – please do not report problems with this port upstream.
   DEHunter58711 under the same license.
 * `neoforge.mods.toml`: displayName "Radiant Gear (Unofficial Port)", credits/authors name the
   original author; no `issueTrackerURL`, `displayURL`, `updateJSONURL`, `displayTest`.
-* **Icon: missing.** There is no Pixelkit icon for Radiant Gear in /workspace, so no `iconFile` is
-  set. The upstream `radiantgear_icon.png` (original author's branding) is intentionally not used.
+* Icon: `radiantgear_icon.png` (400×400 RGBA PNG) is the port icon made by Pixelkit
+  (`/workspace/publish/radiant-gear/art/icon_400.png`), set via `iconFile`. The upstream
+  `radiantgear_icon.png` (original author's branding) is not used.
 
 ## Dependencies
 
