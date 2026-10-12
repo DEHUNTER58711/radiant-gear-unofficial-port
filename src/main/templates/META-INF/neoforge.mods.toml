@@ -1,0 +1,51 @@
+# Unofficial NeoForge 26.3 port of Radiant Gear (original by Illusive Soulworks / TheIllusiveC4, LGPL-3.0-or-later).
+# Modified 2026-10-13 by DEHunter58711. Please do not report issues of this port to the original author.
+modLoader="javafml"
+loaderVersion="[1,)"
+license="${mod_license}"
+
+[[mods]]
+    modId="${mod_id}"
+    version="${mod_version}"
+    displayName="${mod_name}"
+    # No iconFile: no port icon available yet (see PORTING_NOTES.md).
+    credits="Original mod: Illusive Soulworks / TheIllusiveC4. Unofficial NeoForge 26.3 port: DEHunter58711. Not affiliated with or endorsed by the original author."
+    authors="${mod_authors}"
+    description='''
+Compatibility bridge: items in Curios slots emit dynamic light through LambDynamicLights, just like held items.
+
+UNOFFICIAL port to Minecraft 26.3 / NeoForge (LambDynamicLights backend only). Please do NOT report problems with this port to the original author.
+'''
+
+# LambDynamicLights v4 entrypoint (Yumi entrypoint system); only read when LambDynamicLights is installed.
+[modproperties.${mod_id}."yumi:entrypoints"]
+    "lambdynlights:initializer" = "com.illusivesoulworks.radiantgear.compat.ldl.RadiantGearDynamicLights"
+
+[[dependencies.${mod_id}]]
+    modId="neoforge"
+    type="required"
+    versionRange="[${neo_version},)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="minecraft"
+    type="required"
+    versionRange="${minecraft_version_range}"
+    ordering="NONE"
+    side="BOTH"
+
+# Optional on purpose: version mismatches are detected at runtime and only disable the integration.
+[[dependencies.${mod_id}]]
+    modId="curios"
+    type="optional"
+    reason="Curios slots are the light source (17.x for MC 26.3)"
+    ordering="AFTER"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="lambdynlights"
+    type="optional"
+    reason="Dynamic lighting backend (4.13+ for MC 26.3, client only)"
+    ordering="NONE"
+    side="CLIENT"

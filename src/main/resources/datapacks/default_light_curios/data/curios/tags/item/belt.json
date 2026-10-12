@@ -1,0 +1,18 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:torch",
+    "minecraft:soul_torch",
+    { "id": "minecraft:copper_torch", "required": false },
+    "minecraft:lantern",
+    "minecraft:soul_lantern",
+    { "id": "minecraft:copper_lantern", "required": false },
+    { "id": "minecraft:exposed_copper_lantern", "required": false },
+    { "id": "minecraft:weathered_copper_lantern", "required": false },
+    { "id": "minecraft:oxidized_copper_lantern", "required": false },
+    { "id": "minecraft:waxed_copper_lantern", "required": false },
+    { "id": "minecraft:waxed_exposed_copper_lantern", "required": false },
+    { "id": "minecraft:waxed_weathered_copper_lantern", "required": false },
+    { "id": "minecraft:waxed_oxidized_copper_lantern", "required": false }
+  ]
+}

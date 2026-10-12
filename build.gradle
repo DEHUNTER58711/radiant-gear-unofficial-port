@@ -1,169 +1,110 @@
-import javax.net.ssl.HttpsURLConnection
-import java.nio.charset.StandardCharsets
-
+// Unofficial NeoForge 26.3 port of Radiant Gear (LGPL-3.0-or-later).
+// Modified 2026-10-13 by DEHunter58711: replaces the upstream multiloader buildscripts.
 plugins {
-    // Required for NeoGradle
-    id "org.jetbrains.gradle.plugin.idea-ext" version "1.1.7"
+    id 'java-library'
+    id 'net.neoforged.moddev' version '2.0.147'
 }
 
-def publishDiscord() {
-    try {
-        def cfLinks = new StringJoiner('\\n')
+version = mod_version
+group = mod_group_id
 
-        if (project(':fabric').hasProperty('curse_link')) {
-            cfLinks.add("[Fabric](${project(':fabric').findProperty('curse_link')})")
-        }
+repositories {
+    // Curios API
+    maven { url = 'https://maven.theillusivec4.top/' ; content { includeGroup 'top.theillusivec4.curios' } }
+    // LambDynamicLights API + Yumi Commons
+    maven { url = 'https://maven.gegy.dev/releases/' ; content { includeGroupByRegex 'dev\\.(lambdaurora|yumi).*' } }
+    maven { url = 'https://api.modrinth.com/maven' ; content { includeGroup 'maven.modrinth' } }
+    mavenCentral()
+}
 
-        if (project(':forge').hasProperty('curse_link')) {
-            cfLinks.add("[Forge](${project(':forge').findProperty('curse_link')})")
-        }
+base { archivesName = mod_id }
 
-        if (project(':neoforge').hasProperty('curse_link')) {
-            cfLinks.add("[NeoForge](${project(':neoforge').findProperty('curse_link')})")
-        }
-        def modrinthLinks = new StringJoiner('\\n')
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
-        if (project(':fabric').hasProperty('modrinth_link')) {
-            modrinthLinks.add("[Fabric](${project(':fabric').findProperty('modrinth_link')})")
-        }
+neoForge {
+    version = project.neo_version
 
-        if (project(':forge').hasProperty('modrinth_link')) {
-            modrinthLinks.add("[Forge](${project(':forge').findProperty('modrinth_link')})")
+    runs {
+        client {
+            client()
         }
+        server {
+            server()
+            programArgument '--nogui'
+        }
+        configureEach {
+            logLevel = org.slf4j.event.Level.INFO
+        }
+    }
 
-        if (project(':neoforge').hasProperty('curse_link')) {
-            modrinthLinks.add("[NeoForge](${project(':neoforge').findProperty('modrinth_link')})")
-        }
-        println(cfLinks)
-        println(modrinthLinks)
-        def changelog = file("CHANGELOG_LATEST.md").getText()
-        changelog = changelog.substring(changelog.indexOf("##"))
-        changelog = changelog.replaceAll("\n", "\\\\n")
-
-        if (changelog.length() >= 1024) {
-            changelog = changelog.substring(0, 924)
-            changelog = changelog + "...[(See more)](${changelog_link})"
-        }
-        println(changelog)
-        int color = 65392
-
-        if (release_type == "beta") {
-            color = 16763904
-        } else if (release_type == "alpha") {
-            color = 16724273
-        }
-        final String message = """
-            {
-              "embeds": [
-                {
-                  "title": "${mod_name} ${version}",
-                  "color": ${color},
-                  "fields": [
-                    {
-                      "name": "Minecraft Versions",
-                      "value": "${release_versions.replaceAll(",", ", ")}"
-                    },
-                    {
-                      "name": "CurseForge",
-                      "value": "${cfLinks}",
-                      "inline": true
-                    },
-                    {
-                      "name": "Modrinth",
-                      "value": "${modrinthLinks}",
-                      "inline": true
-                    },
-                    {
-                      "name": "Changelog",
-                      "value": "${changelog}"
-                    }
-                  ],
-                  "thumbnail": {
-                    "url": "${discord_thumbnail}"
-                  }
-                }
-              ]
-            }
-            """
-        println(message)
-        final URL url = URI.create("${discordWebhook}").toURL()
-        final HttpsURLConnection connection = (HttpsURLConnection) url.openConnection()
-        connection.addRequestProperty("Content-Type", "application/json; charset=UTF-8")
-        connection.addRequestProperty("User-Agent", "${mod_name} Gradle Upload")
-        connection.setDoOutput(true)
-        connection.setRequestMethod("POST")
-        connection.connect()
-
-        try (OutputStream out = connection.getOutputStream()) {
-            out.write(message.getBytes(StandardCharsets.UTF_8))
-        }
-        connection.getInputStream().close()
-        connection.disconnect()
-    } catch (IOException e) {
-        e.printStackTrace()
+    mods {
+        "${mod_id}" { sourceSet(sourceSets.main) }
     }
 }
 
-def ordered(String... dependencyPaths) {
-    def dependencies = dependencyPaths.collect { tasks.getByPath(it) }
-    for (int i = 0; i < dependencies.size() - 1; i++) {
-        dependencies[i + 1].mustRunAfter(dependencies[i])
-    }
-    return dependencies
+configurations {
+    runtimeClasspath.extendsFrom localRuntime
 }
 
-tasks.register('publishFabric') {
-    dependsOn ordered(':fabric:modrinth', ':fabric:publishCurseForge')
+var mappingsAttribute = Attribute.of('net.minecraft.mappings', String)
 
-    doLast {
-        publishDiscord()
+dependencies {
+    attributesSchema { attribute(mappingsAttribute) }
+
+    // Curios: API jar for compilation only (optional at runtime, guarded).
+    compileOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}:api"
+    // LambDynamicLights v4 API (mojmap); optional, client-only, guarded.
+    compileOnly("dev.lambdaurora.lambdynamiclights:lambdynamiclights-api:${ldl_version}") {
+        attributes { attribute(mappingsAttribute, 'mojmap') }
+    }
+    // Dev runtime (runClient self-check) with real Curios + LDL.
+    // QA: -PnoCurios starts the dev client without Curios to check the "disabled, no crash" path.
+    if (!providers.gradleProperty('noCurios').isPresent()) {
+        localRuntime "maven.modrinth:curios:${curios_version}"
+    }
+    localRuntime "maven.modrinth:lambdynamiclights:${ldl_version}"
+
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test', Test) { useJUnitPlatform() }
+
+var generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
+    var replaceProperties = [
+            minecraft_version_range: minecraft_version_range,
+            neo_version            : neo_version,
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            mod_license            : mod_license,
+            mod_version            : mod_version,
+            mod_authors            : mod_authors,
+    ]
+    inputs.properties replaceProperties
+    expand replaceProperties
+    from 'src/main/templates'
+    into 'build/generated/sources/modMetadata'
+}
+sourceSets.main.resources.srcDir generateModMetadata
+neoForge.ideSyncTask generateModMetadata
+
+// LGPL: ship the original license files verbatim plus the port notes inside the jar.
+var licenseSuffix = "_${mod_id}"
+tasks.named('jar', Jar).configure {
+    from('LICENSE') { rename { "LICENSE" + licenseSuffix } }
+    from('COPYING') { rename { "COPYING" + licenseSuffix } }
+    from('COPYING.LESSER') { rename { "COPYING.LESSER" + licenseSuffix } }
+    from('PORTING_NOTES.md') { rename { "PORTING_NOTES" + licenseSuffix + ".md" } }
+    manifest {
+        attributes([
+                'Implementation-Title'  : project.mod_name,
+                'Implementation-Version': project.mod_version,
+                'Implementation-Vendor' : 'Illusive Soulworks / TheIllusiveC4 (original author); DEHunter58711 (unofficial port)',
+        ])
     }
 }
 
-tasks.register('publishForge') {
-    dependsOn ordered(':forge:modrinth', ':forge:publishCurseForge')
-
-    doLast {
-        publishDiscord()
-    }
-}
-
-tasks.register('publishNeoForge') {
-    dependsOn ordered(':neoforge:modrinth', ':neoforge:publishCurseForge')
-
-    doLast {
-        publishDiscord()
-    }
-}
-
-tasks.register('publishFabricForge') {
-    dependsOn ordered(':forge:modrinth', 'forge:publishCurseForge', ':fabric:modrinth', ':fabric:publishCurseForge')
-
-    doLast {
-        publishDiscord()
-    }
-}
-
-tasks.register('publishFabricNeoForge') {
-    dependsOn ordered(':fabric:modrinth', ':fabric:publishCurseForge', ':neoforge:modrinth', ':neoforge:publishCurseForge')
-
-    doLast {
-        publishDiscord()
-    }
-}
-
-tasks.register('publishForgeNeoForge') {
-    dependsOn ordered(':forge:modrinth', ':forge:publishCurseForge', ':neoforge:modrinth', ':neoforge:publishCurseForge')
-
-    doLast {
-        publishDiscord()
-    }
-}
-
-tasks.register('publishFabricForgeNeoForge') {
-    dependsOn ordered(':forge:modrinth', ':forge:publishCurseForge', ':fabric:modrinth', ':fabric:publishCurseForge', ':neoforge:modrinth', ':neoforge:publishCurseForge')
-
-    doLast {
-        publishDiscord()
-    }
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.compilerArgs << '-Xlint:deprecation'
 }

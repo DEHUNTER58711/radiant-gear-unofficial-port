@@ -1,24 +1,13 @@
-# eclipse
-bin
-*.launch
-.settings
-.metadata
-.classpath
-.project
-
-# idea
-out
-*.ipr
-*.iws
+# Gradle / IDE
+.gradle/
+build/
+run/
+runs/
+out/
+.idea/
 *.iml
-.idea/*
-!.idea/scopes
-
-# gradle
-build
-.gradle
-
-# other
-eclipse
-run
-runs
+# Local reference material (not part of the port sources)
+orig/
+.mcsrc/
+qa/logs/
+qa/jars/

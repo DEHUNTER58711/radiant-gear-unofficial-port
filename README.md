@@ -1,3 +1,7 @@
+> **Unofficial port – Minecraft 26.3 / NeoForge, LambDynamicLights only.**
+> This copy was modified by DEHunter58711 on 2026-10-13 (see `PORTING_NOTES.md`). It is not the
+> original mod by Illusive Soulworks / TheIllusiveC4 – please don't report port issues upstream.
+
 # Radiant Gear
 [![License: LGPL v3](https://img.shields.io/badge/License-LGPL%20v3-blue.svg?&style=flat-square)](https://www.gnu.org/licenses/lgpl-3.0)
 [![ko-fi](https://img.shields.io/badge/Support%20Me-Ko--fi-%23FF5E5B?style=flat-square)](https://ko-fi.com/C0C1NL4O)
