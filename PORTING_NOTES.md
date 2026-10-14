@@ -16,9 +16,11 @@ original author – please do not report problems with this port upstream.
 
 ## License / attribution
 
-* `LICENSE`, `COPYING`, `COPYING.LESSER` unchanged (verbatim) and shipped in the jar as
-  `LICENSE_radiantgear`, `COPYING_radiantgear`, `COPYING.LESSER_radiantgear`, plus this file as
-  `PORTING_NOTES_radiantgear.md`.
+* `COPYING`, `COPYING.LESSER` unchanged (verbatim). Since the docs commit after .2, `LICENSE` is
+  the plain LGPL-3.0 text (= `COPYING.LESSER`, so GitHub detects LGPL-3.0) and the original
+  `LICENSE` notice is kept verbatim in `NOTICE.md` (same approach as the Diet port).
+* Jars (.1/.2) ship `LICENSE_radiantgear` (original notice), `COPYING_radiantgear`,
+  `COPYING.LESSER_radiantgear` and this file as `PORTING_NOTES_radiantgear.md`.
 * Every source file derived from upstream carries a "MODIFIED … by DEHunter58711 on 2026-10-13"
   notice below the original header (LGPL-3.0 §2 / GPL-3.0 §5a). New files are marked as added by
   DEHunter58711 under the same license.
@@ -46,6 +48,8 @@ logs one warning and disables the integration instead of stopping the game (see 
     `LivingEntity.class.isAssignableFrom(type.getBaseClass())` matched **no** entity type and the
     `radiantgear:curios` light source was never registered. The source is now registered for every
     entity type; `CuriosEntityLuminance` returns 0 for non-living entities.
+  * Client test by Moritz with .2 passed: torch in the Curios belt slot emits dynamic light
+    (LDL settings Entities, Self light and Player enabled).
   * New client config `debugLogging` (default `false`): logs registration (type count, player
     included), the Curios stacks read with their LDL item light, and the computed light per entity
     (at most every 5 s per entity), prefixed `[Radiant Gear debug]`.
@@ -130,3 +134,12 @@ level-15 item; held items and other LDL sources are not affected.
   "LambDynamicLights integration for all Curios slots enabled"; with `-PnoCurios` → one WARN
   "disabled: Curios API is not installed", no crash; then SDL window creation fails (expected).
   Resource-reload registration and actual light are only testable in a real client.
+* .1 client test (Moritz): slots appear only after rejoining once the data pack was enabled
+  in-game (Curios assigns entity slots at load); belt torch gave no light → bug fixed in .2.
+* .2 client test (Moritz): belt torch lights up. Passed.
+
+## Troubleshooting (.2)
+* `debugLogging = true` in `config/radiantgear-client.toml` → lines prefixed `[Radiant Gear debug]`
+  (accepted versions, `registered radiantgear:curios light source for N entity types (minecraft:player
+  included: true)`, Curios stacks with LDL item light, computed light per entity every ≤5 s).
+* LDL must have **Entities**, **Self light** (own player) and **Player** in its entity list enabled.
