@@ -8,7 +8,7 @@ original author – please do not report problems with this port upstream.
 
 * Upstream: https://github.com/illusivesoulworks/radiantgear, branch `1.20.6`, commit `e2ef2eb`
   ("4.0.0", 2024-05-30), version `4.0.0+1.20.6` (latest upstream code).
-* Port version: `4.0.0+mc26.3-neoforge-unofficial.1`, MC range `[26.3,26.4)`.
+* Port version: `4.0.0+mc26.3-neoforge-unofficial.2`, MC range `[26.3,26.4)`.
 * Toolchain: NeoForge 26.3.0.51-beta, ModDevGradle 2.0.147, Gradle 9.2.1, Java 25, Mojang names
   (upstream: MultiLoader template with NeoGradle/ForgeGradle/Loom, Parchment, Java 21).
 * Single NeoForge module; the `common`, `fabric`, `forge`, `neoforge` and `buildSrc` projects and
@@ -38,17 +38,30 @@ original author – please do not report problems with this port upstream.
 Both are `optional` in the toml *without* a hard version range on purpose: a wrong version only
 logs one warning and disables the integration instead of stopping the game (see below).
 
+## Changelog of the port
+
+* **unofficial.2** (2026-10-14)
+  * Fix: Curios items gave no light. In 26.3 `EntityType#getBaseClass()` always returns
+    `Entity.class` (default from `EntityTypeTest`), so the .1 filter
+    `LivingEntity.class.isAssignableFrom(type.getBaseClass())` matched **no** entity type and the
+    `radiantgear:curios` light source was never registered. The source is now registered for every
+    entity type; `CuriosEntityLuminance` returns 0 for non-living entities.
+  * New client config `debugLogging` (default `false`): logs registration (type count, player
+    included), the Curios stacks read with their LDL item light, and the computed light per entity
+    (at most every 5 s per entity), prefixed `[Radiant Gear debug]`.
+* **unofficial.1** (2026-10-13): first port.
+
 ## Code changes
 
 | Area | Upstream | Port | Reason |
 |---|---|---|---|
-| LDL integration | `LambDynLightsModule`/`RyoamicModule`: `DynamicLightHandlers.registerDynamicLightHandler(type, handler)` on `EntityJoinLevelEvent` | `compat/ldl/RadiantGearDynamicLights` (`DynamicLightsInitializer`, entrypoint `lambdynlights:initializer` via `[modproperties.radiantgear."yumi:entrypoints"]`) registers a custom `EntityLuminance` type `radiantgear:curios` for every `LivingEntity` type in `EntityLightSourceManager.onRegisterEvent()` | LDL v4 removed the handler API; v4 is data/entrypoint based |
+| LDL integration | `LambDynLightsModule`/`RyoamicModule`: `DynamicLightHandlers.registerDynamicLightHandler(type, handler)` on `EntityJoinLevelEvent` | `compat/ldl/RadiantGearDynamicLights` (`DynamicLightsInitializer`, entrypoint `lambdynlights:initializer` via `[modproperties.radiantgear."yumi:entrypoints"]`) registers a custom `EntityLuminance` type `radiantgear:curios` for every entity type (.2; see changelog) in `EntityLightSourceManager.onRegisterEvent()` | LDL v4 removed the handler API; v4 is data/entrypoint based |
 | Light value | luminance per stack from the light mod | `CuriosEntityLuminance`: `ItemLightSourceManager.getLuminance(stack, eyeInWater)` for each stack, max over all slots | uses LDL's own item rules (JSON, `water_sensitive`) exactly like held items |
 | Curios access | `getEquippedCurios()` as `IItemHandler` | `CuriosLightSampler`: `getCurios()` per slot id → `IDynamicStackHandler` as `ResourceHandler<ItemResource>` (`size/getResource/getAmountAsInt`) | Curios 17 removed `IItemHandlerModifiable`; per-slot loop allows excluding slots |
 | Water check | `entity.isInWater()` | `entity.isEyeInFluid(NeoForgeMod.WATER_TYPE)` | same rule LDL uses for held items |
 | Crash protection | none | `CompatState`: LDL must be 4.13+ (<5), Curios 17.x; Curios API members probed by reflection; any `LinkageError`/runtime error in the integration logs one WARN and switches it off | community issues #2/#11/#27/#32/#34/#35 were all crashes after API changes |
 | Mod class | registered 5 backends, `IEventBus` listeners | registers client config + built-in data pack only; never touches LDL/Curios classes | dedicated server loads without either mod |
-| Config (new) | – | `config/radiantgear-client.toml`: `excludedSlots` (default `[]`), `lightMultiplier` (0.0–2.0, default 1.0) | see "DynamicLantern" and "Light multiplier" |
+| Config (new) | – | `config/radiantgear-client.toml`: `excludedSlots` (default `[]`), `lightMultiplier` (0.0–2.0, default 1.0), `debugLogging` (default false, .2) | see "DynamicLantern" and "Light multiplier" |
 | Data pack (new) | – | built-in pack `mod/radiantgear:datapacks/default_light_curios`, `PackSource.FEATURE` = **disabled by default** | issue #24/#15 + Reddit: users want working defaults |
 
 ### Built-in data pack `default_light_curios` (off by default)
@@ -99,6 +112,10 @@ level-15 item; held items and other LDL sources are not affected.
   incompatible by LDL). No Fabric/Forge builds.
 * Curios is optional (without it the mod does nothing and logs one warning).
 * New client config (excluded slots, light multiplier) and optional data pack.
+* LDL path (bytecode 4.13): our source is read via `LambDynLights.getLuminanceFrom`, which requires
+  LDL's **Entities** setting, and for the own player also **Self light** (both default on), plus the
+  per-entity-type toggle (Player) in LDL's entity list. Held items do NOT depend on "Entities", so a
+  glowing held torch does not prove that option is on.
 * Lighting falls under LDL's **Entities** category (LDL setting "Entities" must be on), like
   upstream with LDL (issue #9).
 * Sides: light logic is client only. Server needs the mod only for the built-in data pack; Curios

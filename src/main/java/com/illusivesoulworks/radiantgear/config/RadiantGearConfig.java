@@ -30,6 +30,7 @@ public final class RadiantGearConfig {
   public static final ModConfigSpec SPEC;
   public static final ModConfigSpec.ConfigValue<List<? extends String>> EXCLUDED_SLOTS;
   public static final ModConfigSpec.DoubleValue LIGHT_MULTIPLIER;
+  public static final ModConfigSpec.BooleanValue DEBUG_LOGGING;
 
   static {
     ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
@@ -45,6 +46,11 @@ public final class RadiantGearConfig {
             "only; held items and other LambDynamicLights sources are not affected).",
             "Result is rounded and clamped to 0..15. 1.0 = same as holding the item.")
         .defineInRange("lightMultiplier", 1.0D, 0.0D, 2.0D);
+    DEBUG_LOGGING = builder
+        .comment("Write diagnostic lines (\"[Radiant Gear debug]\") to the log: light source",
+            "registration, Curios stacks read and the computed light per entity (max. every 5 s",
+            "per entity). Only for troubleshooting.")
+        .define("debugLogging", false);
     SPEC = builder.build();
   }
 
@@ -55,6 +61,10 @@ public final class RadiantGearConfig {
       return Set.of();
     }
     return Set.copyOf(EXCLUDED_SLOTS.get());
+  }
+
+  public static boolean debugLogging() {
+    return SPEC.isLoaded() && DEBUG_LOGGING.get();
   }
 
   public static double lightMultiplier() {

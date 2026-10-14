@@ -28,7 +28,6 @@ import dev.lambdaurora.lambdynlights.api.entity.luminance.EntityLuminance;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.LivingEntity;
 
 /**
  * LambDynamicLights v4 entrypoint ({@code lambdynlights:initializer}, declared via
@@ -56,18 +55,25 @@ public final class RadiantGearDynamicLights implements DynamicLightsInitializer 
         if (CompatState.isDisabled()) {
           return;
         }
+        // unofficial.2: register for EVERY entity type. In 26.3 EntityType#getBaseClass() always
+        // returns Entity.class (EntityTypeTest default), so the .1 filter
+        // "LivingEntity.isAssignableFrom(getBaseClass())" matched no type at all and no light
+        // source was ever attached. CuriosEntityLuminance returns 0 for non-living entities.
         int count = 0;
+        boolean player = false;
         for (EntityType<?> type : BuiltInRegistries.ENTITY_TYPE) {
-          if (LivingEntity.class.isAssignableFrom(type.getBaseClass())) {
-            registerContext.register(type, CuriosEntityLuminance.INSTANCE);
-            count++;
-          }
+          registerContext.register(type, CuriosEntityLuminance.INSTANCE);
+          count++;
+          player |= "minecraft:player".equals(EntityType.getKey(type).toString());
         }
-        RadiantGearConstants.LOG.debug("Radiant Gear: Curios light source for {} entity types",
-            count);
+        RadiantGearDebug.log("registered radiantgear:curios light source for {} entity types"
+            + " (minecraft:player included: {})", count, player);
       });
       RadiantGearConstants.LOG.info(
           "Radiant Gear: LambDynamicLights integration for all Curios slots enabled");
+      RadiantGearDebug.log("LDL {} / Curios {} accepted",
+          CompatState.modVersion(RadiantGearConstants.LDL_ID).orElse("?"),
+          CompatState.modVersion(RadiantGearConstants.CURIOS_ID).orElse("?"));
     } catch (Throwable t) { // incompatible LambDynamicLights/Curios API: never crash the client
       if (t instanceof VirtualMachineError vme) {
         throw vme;
